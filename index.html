@@ -357,7 +357,7 @@
       <div class="row">
         <button class="btn" id="homeBtn" type="button" title="Go to scoreboard">🏠 Scoreboard</button>
         <button class="btn" id="rulesBtn" type="button" title="View rules">📜 Rules</button>
-        <button class="btn" id="talkBtn" type="button" title="Shit Talking">💬 Shit Talking</button>
+        <button class="btn" id="azBtn" type="button" title="All picks A–Z">🔤 PICKS A–Z</button>
         <button class="btn" id="dontPressBtn" type="button" title="Definitely do not press">🟥 DO NOT PRESS</button>
       </div>
     </div>
@@ -417,33 +417,17 @@
       </div>
     </section>
 
-    <!-- SHIT TALKING VIEW -->
-    <section id="view-talk" class="card hide">
+    <!-- PICKS A-Z VIEW -->
+    <section id="view-az" class="card hide">
       <div class="pad">
-        <h2 style="margin-top:0;">Shit Talking</h2>
-        <p class="muted">Say your piece. Everyone can see it.</p>
-
-        <form id="talkForm" class="list" style="margin-bottom:16px;">
-          <li>
-            <label class="muted small">Name (optional)</label>
-            <input id="talkName" placeholder="Anonymous" style="width:100%;margin-top:6px;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font:inherit;" />
-          </li>
-          <li>
-            <label class="muted small">Comment</label>
-            <textarea id="talkText" required placeholder="Talk your shit…" rows="3" style="width:100%;margin-top:6px;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font:inherit;"></textarea>
-          </li>
-          <li style="text-align:right;">
-            <button class="btn" type="submit">Post Comment</button>
-          </li>
-        </form>
-
-        <ul id="talkList" class="list"></ul>
+        <h2 style="margin-top:0;">All Picks (A–Z)</h2>
+        <p class="muted">Alphabetical list of every pick and who selected them.</p>
+        <ul id="azList" class="list" aria-label="All picks A to Z"></ul>
       </div>
     </section>
 
 
-
-  </main>
+</main>
 
   <script>
     /******************************************************************
@@ -472,7 +456,7 @@
     const elScoreView = document.getElementById("view-scoreboard");
     const elPlayerView = document.getElementById("view-player");
 const elRulesView = document.getElementById("view-rules");
-const elTalkView = document.getElementById("view-talk");
+const elAzView = document.getElementById("view-az");
 
     const pageTitle = document.getElementById("pageTitle");
     const pageSubtitle = document.getElementById("pageSubtitle");
@@ -486,12 +470,12 @@ const elTalkView = document.getElementById("view-talk");
 
     const homeBtn = document.getElementById("homeBtn");
 const rulesBtn = document.getElementById("rulesBtn");
-const talkBtn = document.getElementById("talkBtn");
 const dontPressBtn = document.getElementById("dontPressBtn");
+const azBtn = document.getElementById("azBtn");
 homeBtn.addEventListener("click", () => { location.hash = "#/"; });
 rulesBtn.addEventListener("click", () => { location.hash = "#/rules"; });
-talkBtn.addEventListener("click", () => { location.hash = "#/talk"; });
 dontPressBtn.addEventListener("click", () => { window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1&pp=ygUXbmV2ZXIgZ29ubmEgZ2l2ZSB5b3UgdXCgBwE%3D", "_blank", "noopener,noreferrer"); });
+azBtn.addEventListener("click", () => { location.hash = "#/az"; });
 
     function escapeHTML(str){
       return String(str)
@@ -515,9 +499,8 @@ dontPressBtn.addEventListener("click", () => { window.open("https://www.youtube.
       elScoreView.classList.remove("hide");
       elPlayerView.classList.add("hide");
       elRulesView.classList.add("hide");
-      elTalkView.classList.add("hide");
-
-      // Sort by points desc, then name asc (stable display)
+      elAzView.classList.add("hide");
+      elAzView.classList.add("hide");      // Sort by points desc, then name asc (stable display)
       
             const sorted = [...PLAYERS].sort((a,b) => {
         const an = (a.name || "").toLowerCase();
@@ -567,9 +550,7 @@ dontPressBtn.addEventListener("click", () => { window.open("https://www.youtube.
       elScoreView.classList.add("hide");
       elPlayerView.classList.remove("hide");
       elRulesView.classList.add("hide");
-      elTalkView.classList.add("hide");
-
-      playerName.textContent = player.name;
+      elAzView.classList.add("hide");      playerName.textContent = player.name;
       playerMeta.textContent = `Points: ${Number.isFinite(player.points) ? player.points : 0} • 8 picks`;
       playerPill.textContent = `ID: ${player.id}`;
 
@@ -614,55 +595,73 @@ dontPressBtn.addEventListener("click", () => { window.open("https://www.youtube.
         elScoreView.classList.add("hide");
         elPlayerView.classList.add("hide");
         elRulesView.classList.remove("hide");
-        elTalkView.classList.add("hide");
-        return;
+        elAzView.classList.add("hide");        return;
       }
 
-      if (parts[0] === "talk"){
-        pageTitle.textContent = "Shit Talking";
-        pageSubtitle.textContent = "Keep it spicy (and fun)";
+
+      if (parts[0] === "az"){
+        pageTitle.textContent = "Picks A–Z";
+        pageSubtitle.textContent = "";
+
         elScoreView.classList.add("hide");
         elPlayerView.classList.add("hide");
         elRulesView.classList.add("hide");
-        elTalkView.classList.remove("hide");
-        loadTalk();
+        elAzView.classList.remove("hide");
+
+        const azList = document.getElementById("azList");
+        azList.innerHTML = "";
+
+        // Map pick -> [player names...]
+        const pickMap = new Map();
+        PLAYERS.forEach(p => {
+          (Array.isArray(p.picks) ? p.picks : []).forEach(rawPick => {
+            const pick = String(rawPick ?? "").trim();
+            if (!pick) return;
+            if (!pickMap.has(pick)) pickMap.set(pick, []);
+            pickMap.get(pick).push(p.name);
+          });
+        });
+
+        // Sort picks by LAST NAME (ignoring parenthetical qualifiers), then full name
+        const lastNameKey = (name) => {
+          const s = String(name ?? "").trim();
+          // remove parenthetical like "Wade Wilson (criminal)"
+          const noParen = s.replace(/\s*\([^)]*\)\s*/g, " ").trim();
+
+          // Special case: treat "Van Der X" as starting with V
+          const vanDerMatch = noParen.match(/\bVan\s+Der\s+(.+)$/i);
+          if (vanDerMatch) {
+            return ("van der " + vanDerMatch[1]).toLowerCase();
+          }
+
+          const parts = noParen.split(/\s+/).filter(Boolean);
+          const last = parts.length ? parts[parts.length - 1] : noParen;
+          return last.toLowerCase();
+        };
+
+        [...pickMap.keys()]
+          .sort((a,b) => {
+            const la = lastNameKey(a);
+            const lb = lastNameKey(b);
+            const c = la.localeCompare(lb, undefined, { sensitivity: "base" });
+            if (c !== 0) return c;
+            return String(a).localeCompare(String(b), undefined, { sensitivity: "base" });
+          })
+          .forEach(pick => {
+            const who = pickMap.get(pick) || [];
+            const li = document.createElement("li");
+            li.innerHTML =
+              `${toWikiLink(pick)}` +
+              `<div class="muted small">Picked by: ${who.map(escapeHTML).join(", ")}</div>`;
+            azList.appendChild(li);
+          });
+
         return;
       }
 
       // fallback
       location.hash = "#/";
     }
-
-    
-    // ---- Shit Talking (localStorage) ----
-    const talkForm = document.getElementById("talkForm");
-    const talkList = document.getElementById("talkList");
-
-    function loadTalk(){
-      const items = JSON.parse(localStorage.getItem("shitTalking") || "[]");
-      talkList.innerHTML = "";
-      items.slice().reverse().forEach(item => {
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${escapeHTML(item.name || "Anonymous")}</strong>
-                        <div class="muted small">${new Date(item.time).toLocaleString()}</div>
-                        <div style="margin-top:6px;">${escapeHTML(item.text)}</div>`;
-        talkList.appendChild(li);
-      });
-    }
-
-    talkForm?.addEventListener("submit", e => {
-      e.preventDefault();
-      const name = document.getElementById("talkName").value.trim();
-      const text = document.getElementById("talkText").value.trim();
-      if (!text) return;
-
-      const items = JSON.parse(localStorage.getItem("shitTalking") || "[]");
-      items.push({ name, text, time: Date.now() });
-      localStorage.setItem("shitTalking", JSON.stringify(items));
-
-      document.getElementById("talkText").value = "";
-      loadTalk();
-    });
 
     window.addEventListener("hashchange", route);
     route();
