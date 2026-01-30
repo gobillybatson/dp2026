@@ -349,6 +349,45 @@
       .pick-item{ font-size: 22px; padding-left: 18px; }
     }
 
+
+    /* ---- Mobile-only Ozzy placement (above scoreboard) ---- */
+    .ozzy-mobile{ display:none; }
+
+    @media (max-width: 720px){
+      .ozzy-mobile{
+        display:block;
+        width: min(360px, 92vw);
+        height: auto;
+        margin: 0 auto 14px;
+        filter: drop-shadow(0 0 10px rgba(255,0,0,.55));
+        user-select: none;
+        pointer-events: none;
+      }
+
+      /* Hide the on-card Ozzy image on mobile to prevent stacking/overlap */
+      .ozzy-top{ display:none !important; }
+
+      /* Let the scoreboard sit normally; scrolling is OK */
+      .scoreboard-card{ margin-top: 0 !important; }
+
+      /* Scale Deadpool down so he can still "sit" on the frame */
+      .deadpool-sit{
+        width: 155px !important;
+        top: -140px !important;
+        left: 50% !important;
+      }
+
+      /* Give a little air above the card so Deadpool isn't clipped on some browsers */
+      #view-scoreboard{ padding-top: 10px; }
+    }
+
+    @media (max-width: 420px){
+      .deadpool-sit{
+        width: 140px !important;
+        top: -130px !important;
+      }
+    }
+
 </style>
 
 <!-- Defending Champ badge -->
@@ -425,6 +464,8 @@
 
   <main>
     <!-- SCOREBOARD VIEW -->
+    <img src="./ozzy.png" alt="Dead Pool 2026" class="ozzy-mobile" />
+
     <section id="view-scoreboard" class="card scoreboard-card">
       <img src="./ozzy.png" alt="Dead Pool 2026" class="ozzy-top" />
       <img src="./deadpool.png" alt="" class="deadpool-sit" aria-hidden="true" />
