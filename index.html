@@ -388,6 +388,24 @@
       }
     }
 
+
+    /* ---- Mobile: remove tap/focus highlight boxes on picks ---- */
+    @media (max-width: 720px){
+      #picksList li,
+      #picksList li a{
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+      }
+      #picksList li:focus,
+      #picksList li:active,
+      #picksList li a:focus,
+      #picksList li a:active{
+        outline: none !important;
+        box-shadow: none !important;
+      }
+    }
+
 </style>
 
 <!-- Defending Champ badge -->
