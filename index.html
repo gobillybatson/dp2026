@@ -406,6 +406,22 @@
       }
     }
 
+
+    /* ---- Mobile: keep click-instruction clear of Deadpool ---- */
+    @media (max-width: 720px){
+      .click-instruction{
+        position: relative;
+        z-index: 2;
+        margin-top: 28px;           /* push it down below Deadpool overlap zone */
+        margin-left: 0;
+        max-width: 92%;
+      }
+      /* Give Deadpool its own space above the table */
+      .deadpool-sit{
+        z-index: 1;
+      }
+    }
+
 </style>
 
 <!-- Defending Champ badge -->
