@@ -407,19 +407,25 @@
     }
 
 
-    /* ---- Mobile: keep click-instruction clear of Deadpool ---- */
+
+
+    /* ---- Mobile: keep click-instruction BELOW Deadpool (and behind if ever overlapping) ---- */
     @media (max-width: 720px){
+      /* Ensure Deadpool always layers above the instruction if they ever touch */
+      .deadpool-sit{ z-index: 5 !important; }
+
+      /* Push the instruction down far enough to avoid overlap */
       .click-instruction{
         position: relative;
-        z-index: 2;
-        margin-top: 28px;           /* push it down below Deadpool overlap zone */
+        z-index: 1;                 /* behind Deadpool */
+        margin-top: 120px;          /* clears Deadpool legs/feet zone */
         margin-left: 0;
         max-width: 92%;
       }
-      /* Give Deadpool its own space above the table */
-      .deadpool-sit{
-        z-index: 1;
-      }
+    }
+
+    @media (max-width: 420px){
+      .click-instruction{ margin-top: 110px; }
     }
 
 </style>
