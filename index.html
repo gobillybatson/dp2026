@@ -454,6 +454,24 @@
     .scoreboard-card .click-instruction{ display:none !important; }
   }
 
+
+    .leader-name{
+      color:#ffd700 !important;
+      text-shadow: 0 0 8px #ffd700, 0 0 16px rgba(255,215,0,.8), 0 0 26px rgba(255,215,0,.6) !important;
+    }
+
+
+    @keyframes leaderPulse{
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+
+    .leader-name{
+      animation: leaderPulse 2.2s ease-in-out infinite;
+      display: inline-block;
+    }
+
 </style>
 
 
@@ -659,16 +677,13 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
       elAzView.classList.add("hide");
       elAzView.classList.add("hide");      // Sort by points desc, then name asc (stable display)
       
-            const sorted = [...PLAYERS].sort((a,b) => {
-        const an = (a.name || "").toLowerCase();
-        const bn = (b.name || "").toLowerCase();
-        // Nancy (last year\'s winner) stays pinned to the top of the scoreboard
-        if (an === "nancy" && bn !== "nancy") return -1;
-        if (bn === "nancy" && an !== "nancy") return 1;
-        return (b.points - a.points) || a.name.localeCompare(b.name);
+            const sorted = [...PLAYERS].sort((a, b) => {
+        // Highest points first; tie-break by name
+        if ((b.points ?? 0) !== (a.points ?? 0)) return (b.points ?? 0) - (a.points ?? 0);
+        return String(a.name ?? "").localeCompare(String(b.name ?? ""));
       });
 
-      // store previous scores for animation
+// store previous scores for animation
       if (!window._prevScores) window._prevScores = {};
     
 
@@ -677,7 +692,7 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="rank">${"#" + (idx + 1)}</td>
-          <td class="player-cell" style="text-shadow: 0 0 6px #ff4ecd, 0 0 14px rgba(255,78,205,.8), 0 0 22px rgba(255,78,205,.6);"><a href="#/player/${encodeURIComponent(p.id)}">${escapeHTML(p.name)}${(String(p.name).toLowerCase()==="nancy") ? " 🏆" : ""}</a></td>
+          <td class="player-cell ${idx===0 ? "leader-name" : ""}" style="text-shadow: 0 0 6px #ff4ecd, 0 0 14px rgba(255,78,205,.8), 0 0 22px rgba(255,78,205,.6);"><a href="#/player/${encodeURIComponent(p.id)}">${escapeHTML(p.name)}</a></td>
           <td class="score score-cell right" style="font-weight:900; text-shadow: 0 0 8px #3ddc97, 0 0 18px rgba(61,220,151,.9), 0 0 30px rgba(61,220,151,.7);" data-id="${p.id}">${Number.isFinite(p.points) ? p.points : 0}</td>
         `;
         scoreRows.appendChild(tr);
