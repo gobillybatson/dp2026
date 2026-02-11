@@ -472,6 +472,27 @@
       display: inline-block;
     }
 
+
+    /* ---- Picks: scored (RIP) styling ---- */
+    .pick-scored{
+      text-decoration: line-through;
+      text-decoration-thickness: 3px;
+      text-decoration-color: rgba(255, 77, 77, .95);
+      opacity: 0.92;
+    }
+    .rip-tag{
+      margin-left: 10px;
+      font-size: 0.72em;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      color: #ff4d4d;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .rip-tag .rip-date{
+      margin-right: 6px;
+    }
+
 </style>
 
 
@@ -617,7 +638,7 @@
       { id: 4, name: "Travis", points: 0, note: "—", picks: ["Norman Reedus","Clint Eastwood","Mick Jagger","Al Pacino","Whoopi Goldberg","Bernie Sanders","Nancy Pelosi","Greta Thunberg"] },
       { id: 5, name: "Kori", points: 0, note: "—", picks: ["Bruce Willis","Phil Collins","Eric Dane","Bill Clinton","Ali Khamenei","Prince Andrew","Kurupt","Jack Veal"] },
       { id: 6, name: "Jack", points: 0, note: "—", picks: ["Dean Harrison","John McGuinness","Conor Cummins","David Irving","Ben Sasse","Michael Bolton","Esther Rantzen","Davey Todd"] },
-      { id: 7, name: "Eric", points: 52, note: "—", picks: ["Bruce Willis","Michael J Fox","Eric Dane","Ray J","James Van Der Beek","Colleen Hoover","Quinton Aaron","Jaden Smith"] },
+      { id: 7, name: "Eric", points: 52, note: "—", picks: ["Bruce Willis","Michael J Fox","Eric Dane","Ray J","James Van Der Beek|02/11/26","Colleen Hoover","Quinton Aaron","Jaden Smith"] },
       { id: 8, name: "Bubs", points: 0, note: "—", picks: ["Bruce Willis","Michael J Fox","Nancy Pelosi","John Rhys-Davies","Mel Brooks","Clint Eastwood","Michael Caine","Nick Fuentes"] },
       { id: 9, name: "Stephanie", points: 0, note: "—", picks: ["Dolly Parton","Jack Nicholson","Robert Deniro","Axel Rose","Mick Jagger","Stevie Nicks","Taylor Swift","Chappell Roan"] },
       { id: 10, name: "Nik", points: 0, note: "—", picks: ["Sean Combs","Donald Trump","Joe Biden","Robert Downey Jr","Nicole Kidman","George Clooney","Jared Leto","Tom Holland"] },
@@ -667,7 +688,40 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
       return `<a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHTML(text)}</a>`;
     }
 
-    function renderScoreboard(){
+    // ----- Pick helpers -----
+    // Easiest input option:
+    //   "Phil Collins|2026-02-11"   (name | date)
+    // Or you can use an object:
+    //   { name: "Phil Collins", rip: "2026-02-11" }
+    // If no RIP date is present, it renders normally.
+    function parsePick(raw){
+      if (raw && typeof raw === "object" && !Array.isArray(raw)){
+        const name = String(raw.name ?? raw.pick ?? "").trim();
+        const rip = raw.rip ? String(raw.rip).trim() : "";
+        return { name, rip };
+      }
+      const s = String(raw ?? "").trim();
+      if (!s) return { name: "", rip: "" };
+
+      // Pipe format: "Name|YYYY-MM-DD" (or any date string you want to display)
+      const parts = s.split("|");
+      if (parts.length >= 2){
+        const name = parts[0].trim();
+        const rip = parts.slice(1).join("|").trim();
+        return { name, rip };
+      }
+      return { name: s, rip: "" };
+    }
+
+    function renderPickHTML(rawPick){
+      const { name, rip } = parsePick(rawPick);
+      const linked = toWikiLink(name);
+      if (!rip) return `<span class="pickText">${linked}</span>`;
+      return `<span class="pickText pick-scored">${linked}</span><span class="rip-tag"><span class="rip-date">${escapeHTML(rip)}</span>RIP</span>`;
+    }
+
+    function renderScoreboard(
+){
       pageTitle.textContent = "Scoreboard";
       pageSubtitle.textContent = "";
 
@@ -740,7 +794,7 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
         li.className = "pick-item" + (i === 7 ? " last-pick" : "");
         li.style.animationDelay = `${i * 90}ms`;
 
-        li.innerHTML = `<span class="pickText">${toWikiLink(pick)}</span>`;
+        li.innerHTML = renderPickHTML(pick);
         picksListEl.appendChild(li);
       }
     }
@@ -786,10 +840,13 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
         const pickMap = new Map();
         PLAYERS.forEach(p => {
           (Array.isArray(p.picks) ? p.picks : []).forEach(rawPick => {
-            const pick = String(rawPick ?? "").trim();
+            const parsed = parsePick(rawPick);
+            const pick = String(parsed.name ?? "").trim();
+            const rip = String(parsed.rip ?? "").trim();
             if (!pick) return;
-            if (!pickMap.has(pick)) pickMap.set(pick, []);
-            pickMap.get(pick).push(p.name);
+            if (!pickMap.has(pick)) pickMap.set(pick, { who: [], rips: new Set() });
+            pickMap.get(pick).who.push(p.name);
+            if (rip) pickMap.get(pick).rips.add(rip);
           });
         });
 
@@ -819,11 +876,13 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
             return String(a).localeCompare(String(b), undefined, { sensitivity: "base" });
           })
           .forEach(pick => {
-            const who = pickMap.get(pick) || [];
+            const entry = pickMap.get(pick) || { who: [], rips: new Set() };
+            const who = entry.who || [];
+            const rips = entry.rips || new Set();
             const li = document.createElement("li");
             li.innerHTML =
               `${toWikiLink(pick)}` +
-              `<div class="muted small">Picked by: ${who.map(escapeHTML).join(", ")}</div>`;
+              `<div class="muted small">Picked by: ${who.map(escapeHTML).join(", ")}</div>${(rips && rips.size) ? `<div class="rip-tag"><span class="rip-date">${[...rips].sort()[0]}</span>RIP</div>` : ``}`;
             azList.appendChild(li);
           });
 
