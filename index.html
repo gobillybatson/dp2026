@@ -595,23 +595,19 @@
 /* ===== Responsive RIP sticker (mobile) ===== */
 @media (max-width:720px){
 
-  /* Keep it in the corner and scale with viewport so it won't cover rows */
+  /* halfway down right side of scoreboard */
   .scoreboard-card .rip-wrap{
-    right: 2%;
-    bottom: 2%;
-    transform: rotate(-8deg);
+    top: 50%;
+    right: 6px;
+    bottom: auto;
+    transform: translateY(-50%) rotate(-6deg);
   }
 
   .scoreboard-card .rip-wrap .rip-overlay{
-    width: clamp(70px, 22vw, 120px);
+    width: clamp(60px, 20vw, 100px);
   }
 
-  /* Reserve some breathing room so the last row never sits under the sticker */
-  .scoreboard-card{
-    padding-bottom: 70px;
-  }
-
-  /* Ensure table text is always above the sticker if they ever touch */
+  /* ensure table always above if overlap */
   .scoreboard-card table{
     position: relative;
     z-index: 8;
