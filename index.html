@@ -45,7 +45,7 @@
     }
     }
     .title-image{
-      max-width: 360px;
+      max-width: 288px;
       height: auto;
       display: block;
       margin-bottom: 40px; /* pushes Ozzy down toward scoreboard */
@@ -529,6 +529,80 @@
   #pageSubtitle{ display:none !important; }
 </style>
 
+
+<style>
+
+}
+</style>
+
+
+
+
+
+
+
+
+
+<style>
+/* wrapper holds tape */
+.scoreboard-card .rip-wrap{
+  position:absolute;
+  right:110px;
+  bottom:20px;
+  transform: rotate(-10deg);
+  z-index:7;
+  pointer-events:none;
+}
+
+/* image itself */
+.scoreboard-card .rip-wrap .rip-overlay{
+  width:187px;
+  height:auto;
+  display:block;
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,.6));
+  position:relative;
+  z-index:5;
+}
+
+/* top-right masking tape */
+.scoreboard-card .rip-wrap::before{
+  content:"";
+  position:absolute;
+  width:72px;
+  height:22px;
+  background: rgba(255,255,255,0.95);
+  box-shadow:0 3px 8px rgba(0,0,0,.45);
+  top:-18px;
+  right:-18px;
+  z-index:10;
+  transform: rotate(25deg);
+}
+
+/* bottom-left masking tape */
+.scoreboard-card .rip-wrap::after{
+  content:"";
+  position:absolute;
+  z-index:10;
+  width:72px;
+  height:22px;
+  background: rgba(255,255,255,0.95);
+  box-shadow:0 3px 8px rgba(0,0,0,.45);
+  bottom:-18px;
+  left:-18px;
+  transform: rotate(25deg);
+}
+
+@media (max-width:720px){
+  .scoreboard-card .rip-wrap{
+    right:70px;
+    bottom:10px;
+  }
+  .scoreboard-card .rip-wrap .rip-overlay{
+    width:140px;
+  }
+}
+</style>
+
 </head>
 
 <body>
@@ -559,6 +633,7 @@
     <section id="view-scoreboard" class="card scoreboard-card">
       <img src="./ozzy.png" alt="Dead Pool 2026" class="ozzy-top" />
       <img src="./deadpool.png" alt="" class="deadpool-sit" aria-hidden="true" />
+      <div class="rip-wrap"><img src="./RIP.png" alt="" class="rip-overlay" aria-hidden="true" /></div>
       
 <div class="click-instruction">
   👉 <strong>Click a player’s name</strong> to view that person’s picks
@@ -632,13 +707,13 @@
      * - picks: 8 strings (each player has their own list)
      ******************************************************************/
     const PLAYERS = [
-      { id: 1, name: "Glenn", points: 0, note: "—", picks: ["Phil Collins","Richard Dreyfuss","Eric Dane","Bruce Willis","Billy Connolly","Alan Alda","Tylor Chase","Madison Beer"] },
-      { id: 2, name: "Nancy", points: 0, note: "—", picks: ["Eric Dane","Ariana Grande","Jeffrey Dean Morgan","Tylor Chase","Billy Joel","Dave Coulier","Joe Exotic","Jessie Murph"] },
+      { id: 1, name: "Glenn", points: 47, note: "—", picks: ["Phil Collins","Richard Dreyfuss","Eric Dane|2/19/26","Bruce Willis","Billy Connolly","Alan Alda","Tylor Chase","Madison Beer"] },
+      { id: 2, name: "Nancy", points: 47, note: "—", picks: ["Eric Dane|2/19/26","Ariana Grande","Jeffrey Dean Morgan","Tylor Chase","Billy Joel","Dave Coulier","Joe Exotic","Jessie Murph"] },
       { id: 3, name: "Lili", points: 0, note: "—", picks: ["Christa Pike","Wade Wilson (criminal)","Gypsy Rose Blanchard","Clint Eastwood","Tylor Chase","Eugenia Cooney","Bryan Kohberger","Jake Paul"] },
       { id: 4, name: "Travis", points: 0, note: "—", picks: ["Norman Reedus","Clint Eastwood","Mick Jagger","Al Pacino","Whoopi Goldberg","Bernie Sanders","Nancy Pelosi","Greta Thunberg"] },
-      { id: 5, name: "Kori", points: 0, note: "—", picks: ["Bruce Willis","Phil Collins","Eric Dane","Bill Clinton","Ali Khamenei","Prince Andrew","Kurupt","Jack Veal"] },
+      { id: 5, name: "Kori", points: 47, note: "—", picks: ["Bruce Willis","Phil Collins","Eric Dane|2/19/26","Bill Clinton","Ali Khamenei","Prince Andrew","Kurupt","Jack Veal"] },
       { id: 6, name: "Jack", points: 0, note: "—", picks: ["Dean Harrison","John McGuinness","Conor Cummins","David Irving","Ben Sasse","Michael Bolton","Esther Rantzen","Davey Todd"] },
-      { id: 7, name: "Eric", points: 52, note: "—", picks: ["Bruce Willis","Michael J Fox","Eric Dane","Ray J","James Van Der Beek|02/11/26","Colleen Hoover","Quinton Aaron","Jaden Smith"] },
+      { id: 7, name: "Eric", points: 99, note: "—", picks: ["Bruce Willis","Michael J Fox","Eric Dane|2/19/26","Ray J","James Van Der Beek|02/11/26","Colleen Hoover","Quinton Aaron","Jaden Smith"] },
       { id: 8, name: "Bubs", points: 0, note: "—", picks: ["Bruce Willis","Michael J Fox","Nancy Pelosi","John Rhys-Davies","Mel Brooks","Clint Eastwood","Michael Caine","Nick Fuentes"] },
       { id: 9, name: "Stephanie", points: 0, note: "—", picks: ["Dolly Parton","Jack Nicholson","Robert Deniro","Axel Rose","Mick Jagger","Stevie Nicks","Taylor Swift","Chappell Roan"] },
       { id: 10, name: "Nik", points: 0, note: "—", picks: ["Sean Combs","Donald Trump","Joe Biden","Robert Downey Jr","Nicole Kidman","George Clooney","Jared Leto","Tom Holland"] },
