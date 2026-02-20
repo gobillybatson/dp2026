@@ -598,19 +598,28 @@
   /* halfway down, shifted LEFT so it never covers the score column */
   .scoreboard-card .rip-wrap{
     top: 50%;
-    right: clamp(52px, 12vw, 92px); /* bigger = further left */
+    right: clamp(52px, 12vw, 92px);
     bottom: auto;
     transform: translateY(-50%) rotate(-6deg);
-    z-index: 25; /* bring sticker above table/grid lines */
+    z-index: 25;
   }
 
+  /* restore image size */
   .scoreboard-card .rip-wrap .rip-overlay{
     width: clamp(60px, 20vw, 100px);
     position: relative;
     z-index: 26;
   }
 
-  /* Make sure the table stays behind the sticker on mobile */
+  /* reduce tape only */
+  .scoreboard-card .rip-wrap::before,
+  .scoreboard-card .rip-wrap::after{
+    z-index: 35;
+    width: clamp(42px, 10vw, 60px);
+    height: clamp(14px, 3.5vw, 18px);
+  }
+
+  /* Make sure the table stays behind the sticker */
   .scoreboard-card table{
     position: relative;
     z-index: 5;
