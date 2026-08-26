@@ -727,8 +727,8 @@
   <script>
     /******************************************************************
      * DATA (EDIT HERE)
-     * - points: legacy fallback only; scoring is automatic
-     * - picks: 8 strings; add |M/D/YY to score that pick
+     * - points: number you manually enter
+     * - picks: 8 strings (each player has their own list)
      ******************************************************************/
     const PLAYERS = [
       { id: 1, name: "Glenn", points: 47, note: "—", picks: ["Phil Collins","Richard Dreyfuss","Eric Dane|2/19/26","Bruce Willis","Billy Connolly","Alan Alda","Tylor Chase","Madison Beer"] },
@@ -819,150 +819,8 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
       return `<span class="pickText pick-scored">${linked}</span><span class="rip-tag"><span class="rip-date">${escapeHTML(rip)}</span>RIP</span>`;
     }
 
-
-
-    // ----- Automatic scoring -----
-    // Score = 100 - age on the RIP date.
-    // Current scored picks are stored locally for instant/offline-safe scoring.
-    // Future dated picks are looked up automatically through Wikidata and cached.
-    const BIRTHDATE_OVERRIDES = {
-      "Eric Dane": "1972-11-09",
-      "Ali Khamenei": "1939-07-16",
-      "James Van Der Beek": "1977-03-08",
-      "Dolly Parton": "1946-01-19"
-    };
-
-    function normalizePoolDate(value){
-      const s = String(value ?? "").trim();
-      if (!s) return null;
-      let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-      if (m) return { year:+m[1], month:+m[2], day:+m[3] };
-      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
-      if (m){
-        let year = +m[3];
-        if (year < 100) year += 2000;
-        return { year, month:+m[1], day:+m[2] };
-      }
-      return null;
-    }
-
-    function ageOnDate(birthISO, ripValue){
-      const b = normalizePoolDate(birthISO);
-      const d = normalizePoolDate(ripValue);
-      if (!b || !d) return null;
-      let age = d.year - b.year;
-      if (d.month < b.month || (d.month === b.month && d.day < b.day)) age--;
-      return age >= 0 ? age : null;
-    }
-
-    async function lookupBirthDate(name){
-      const cleanName = String(name ?? "").trim();
-      if (!cleanName) return null;
-      if (BIRTHDATE_OVERRIDES[cleanName]) return BIRTHDATE_OVERRIDES[cleanName];
-
-      const cacheKey = "deadpoolBirthdate:" + cleanName.toLowerCase();
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) return cached;
-      } catch(e) {}
-
-      try {
-        const searchURL = "https://www.wikidata.org/w/api.php?action=wbsearchentities" +
-          "&search=" + encodeURIComponent(cleanName) +
-          "&language=en&format=json&origin=*&limit=5";
-        const searchData = await (await fetch(searchURL)).json();
-        const hits = Array.isArray(searchData.search) ? searchData.search : [];
-
-        for (const hit of hits){
-          if (!hit?.id) continue;
-          const entityURL = "https://www.wikidata.org/w/api.php?action=wbgetentities" +
-            "&ids=" + encodeURIComponent(hit.id) +
-            "&props=claims&format=json&origin=*";
-          const entityData = await (await fetch(entityURL)).json();
-          const birthClaim = entityData?.entities?.[hit.id]?.claims?.P569?.[0]?.mainsnak?.datavalue?.value?.time;
-          if (!birthClaim) continue;
-          const mm = String(birthClaim).match(/[+-](\d{4,})-(\d{2})-(\d{2})T/);
-          if (!mm) continue;
-          const iso = `${mm[1]}-${mm[2]}-${mm[3]}`;
-          try { localStorage.setItem(cacheKey, iso); } catch(e) {}
-          return iso;
-        }
-      } catch (err) {
-        console.warn("Could not look up birth date for", cleanName, err);
-      }
-      return null;
-    }
-
-    // Calculate known dated picks immediately so the scoreboard is correct
-    // without waiting for an online lookup.
-    function calculateKnownPlayerPoints(player){
-      let total = 0;
-      let unresolved = false;
-      const picks = Array.isArray(player.picks) ? player.picks : [];
-
-      for (const rawPick of picks){
-        const { name, rip } = parsePick(rawPick);
-        if (!rip) continue;
-
-        const cleanName = String(name ?? "").trim();
-        const birthDate = BIRTHDATE_OVERRIDES[cleanName] || null;
-        const age = birthDate ? ageOnDate(birthDate, rip) : null;
-
-        if (age !== null) total += Math.max(0, 100 - age);
-        else unresolved = true;
-      }
-
-      if (unresolved && Number.isFinite(player.points) && player.points > total) {
-        return player.points;
-      }
-      return total;
-    }
-
-    async function calculatePlayerPoints(player){
-      let total = 0;
-      let unresolved = false;
-      const picks = Array.isArray(player.picks) ? player.picks : [];
-
-      for (const rawPick of picks){
-        const { name, rip } = parsePick(rawPick);
-        if (!rip) continue;
-
-        const cleanName = String(name ?? "").trim();
-        let birthDate = BIRTHDATE_OVERRIDES[cleanName] || null;
-        if (!birthDate) birthDate = await lookupBirthDate(cleanName);
-
-        const age = birthDate ? ageOnDate(birthDate, rip) : null;
-        if (age !== null) total += Math.max(0, 100 - age);
-        else unresolved = true;
-      }
-
-      if (unresolved && Number.isFinite(player.points) && player.points > total) {
-        return player.points;
-      }
-      return total;
-    }
-
-    PLAYERS.forEach(p => {
-      p.autoPoints = calculateKnownPlayerPoints(p);
-    });
-
-    function pointsFor(player){
-      return Number.isFinite(player.autoPoints) ? player.autoPoints : 0;
-    }
-
-    async function refreshAutomaticScores(){
-      let changed = false;
-      await Promise.all(PLAYERS.map(async p => {
-        const resolved = await calculatePlayerPoints(p);
-        if (resolved !== p.autoPoints){
-          p.autoPoints = resolved;
-          changed = true;
-        }
-      }));
-      return changed;
-    }
-
-    function renderScoreboard(){
+    function renderScoreboard(
+){
       pageTitle.textContent = "Scoreboard";
       pageSubtitle.textContent = "";
 
@@ -970,13 +828,17 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
       elPlayerView.classList.add("hide");
       elRulesView.classList.add("hide");
       elAzView.classList.add("hide");
-
-      const sorted = [...PLAYERS].sort((a, b) => {
-        if (pointsFor(b) !== pointsFor(a)) return pointsFor(b) - pointsFor(a);
+      elAzView.classList.add("hide");      // Sort by points desc, then name asc (stable display)
+      
+            const sorted = [...PLAYERS].sort((a, b) => {
+        // Highest points first; tie-break by name
+        if ((b.points ?? 0) !== (a.points ?? 0)) return (b.points ?? 0) - (a.points ?? 0);
         return String(a.name ?? "").localeCompare(String(b.name ?? ""));
       });
 
+// store previous scores for animation
       if (!window._prevScores) window._prevScores = {};
+    
 
       scoreRows.innerHTML = "";
       sorted.forEach((p, idx) => {
@@ -984,13 +846,13 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
         tr.innerHTML = `
           <td class="rank">${"#" + (idx + 1)}</td>
           <td class="player-cell ${idx===0 ? "leader-name" : ""}" style="text-shadow: 0 0 6px #ff4ecd, 0 0 14px rgba(255,78,205,.8), 0 0 22px rgba(255,78,205,.6);"><a href="#/player/${encodeURIComponent(p.id)}">${escapeHTML(p.name)}</a></td>
-          <td class="score score-cell right" style="font-weight:900; text-shadow: 0 0 8px #3ddc97, 0 0 18px rgba(61,220,151,.9), 0 0 30px rgba(61,220,151,.7);" data-id="${p.id}">${pointsFor(p)}</td>
+          <td class="score score-cell right" style="font-weight:900; text-shadow: 0 0 8px #3ddc97, 0 0 18px rgba(61,220,151,.9), 0 0 30px rgba(61,220,151,.7);" data-id="${p.id}">${Number.isFinite(p.points) ? p.points : 0}</td>
         `;
         scoreRows.appendChild(tr);
 
         const scoreCell = tr.querySelector(".score");
         const prev = window._prevScores[p.id];
-        if (prev !== undefined && prev !== pointsFor(p)){
+        if (prev !== undefined && prev !== p.points){
           scoreCell.style.transform = "scale(1.25)";
           scoreCell.style.color = "var(--good)";
           setTimeout(() => {
@@ -998,20 +860,9 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
             scoreCell.style.color = "";
           }, 300);
         }
-        window._prevScores[p.id] = pointsFor(p);
+        window._prevScores[p.id] = p.points;
+    
       });
-
-      if (!window._scoreLookupRunning){
-        window._scoreLookupRunning = true;
-        refreshAutomaticScores()
-          .then(changed => {
-            window._scoreLookupRunning = false;
-            if (changed && (location.hash === "" || location.hash === "#/")){
-              renderScoreboard();
-            }
-          })
-          .catch(() => { window._scoreLookupRunning = false; });
-      }
     }
 
     function renderPlayer(id){
@@ -1024,7 +875,7 @@ azBtn.addEventListener("click", () => { location.hash = "#/az"; });
       elPlayerView.classList.remove("hide");
       elRulesView.classList.add("hide");
       elAzView.classList.add("hide");      playerName.textContent = player.name;
-      playerMeta.textContent = `Points: ${pointsFor(player)} • 8 picks`;
+      playerMeta.textContent = `Points: ${Number.isFinite(player.points) ? player.points : 0} • 8 picks`;
       playerPill.textContent = `ID: ${player.id}`;
 
       // IMPORTANT: Do NOT replace the #picksList element.
